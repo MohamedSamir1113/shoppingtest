@@ -3,7 +3,7 @@ package shop;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.*;
 
-@Stateless
+//@Stateless
 @Entity
 @Table(name = "customer")
 public class Customer {

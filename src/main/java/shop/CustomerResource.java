@@ -76,33 +76,49 @@ public class CustomerResource {
 
     @PUT
     @Path("/updateCustomer/{username}")
-    public String updateCustomer(@PathParam("username") String username, Customer customer) {
+    public String updateCustomer(@PathParam("username") String username,Customer customer) {
+
+        Customer customerFromDB = entityManager.find(Customer.class , username);
+        customerFromDB.setName(customer.getName());
+        customerFromDB.setEmail(customer.getEmail());
+        customerFromDB.setPassword(customer.getPassword());
+        customerFromDB.setAddress(customer.getAddress());
+        customerFromDB.setPhone(customer.getPhone());
+
+//        return entityManager.merge(customerFromDB);
         try {
-            Customer customerFromDB = entityManager.find(Customer.class, username);
-            customerFromDB.setName(customer.getName());
-            customerFromDB.setEmail(customer.getEmail());
-            customerFromDB.setPassword(customer.getPassword());
-            customerFromDB.setAddress(customer.getAddress());
-            customerFromDB.setPhone(customer.getPhone());
-            entityManager.merge(customerFromDB);
-            return "Customer updated successfully!";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Customer update failed!";
+            userTransaction.begin();
+        } catch (NotSupportedException | SystemException e) {
+            throw new RuntimeException(e);
         }
+        entityManager.merge(customerFromDB);
+        try {
+            userTransaction.commit();
+        } catch (RollbackException | HeuristicMixedException | HeuristicRollbackException | SecurityException |
+                 IllegalStateException | SystemException e) {
+            e.printStackTrace();
+        }
+        return "Customer updated successfully!";
+
     }
 
     @DELETE
     @Path("/deleteCustomer/{username}")
     public String deleteCustomer(@PathParam("username") String username) {
+        Customer customer = entityManager.find(Customer.class, username);
         try {
-            Customer customer = entityManager.find(Customer.class, username);
-            entityManager.remove(customer);
-            return "Customer deleted successfully!";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Customer deletion failed!";
+            userTransaction.begin();
+        } catch (NotSupportedException | SystemException e) {
+            throw new RuntimeException(e);
         }
+        entityManager.remove(customer);
+        try {
+            userTransaction.commit();
+        } catch (RollbackException | HeuristicMixedException | HeuristicRollbackException | SecurityException |
+                 IllegalStateException | SystemException e) {
+            e.printStackTrace();
+        }
+        return "Customer deleted successfully!";
     }
 
 
