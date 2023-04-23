@@ -14,6 +14,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import java.util.Random;
 
 @Path("/admin")
 @Produces(MediaType.APPLICATION_JSON)
@@ -23,6 +24,16 @@ public class AdminResource {
     private final EntityManagerFactory emf = Persistence.createEntityManagerFactory("mysql");
 
     private final EntityManager entityManager = emf.createEntityManager();
+
+    private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
+    private static final String CHAR_UPPER = CHAR_LOWER.toUpperCase();
+    private static final String NUMBER = "0123456789";
+    private static final String OTHER_CHAR = "!@#$%&*()_+-=[]?";
+
+    private static final String PASSWORD_ALLOW_BASE = CHAR_LOWER + CHAR_UPPER + NUMBER + OTHER_CHAR;
+    private static final int PASSWORD_LENGTH = 12;
+
+    private static Random random = new Random();
 
     @Resource
     private UserTransaction userTransaction;
@@ -84,9 +95,9 @@ public class AdminResource {
 
     @PUT
     @Path("/updateAdmin/{username}")
-    public String updateAdmin(@PathParam("username") String username,Admin admin) {
+    public String updateAdmin(@PathParam("username") String username, Admin admin) {
 
-        Admin adminFromDB = entityManager.find(Admin.class , username);
+        Admin adminFromDB = entityManager.find(Admin.class, username);
         adminFromDB.setName(admin.getName());
         adminFromDB.setEmail(admin.getEmail());
         adminFromDB.setPassword(admin.getPassword());
@@ -138,6 +149,8 @@ public class AdminResource {
         } catch (NotSupportedException | SystemException e) {
             throw new RuntimeException(e);
         }
+        String password = generateRandomPassword();
+        sellingCompanyRep.setPassword(password);
         entityManager.persist(sellingCompanyRep);
         try {
             userTransaction.commit();
@@ -148,13 +161,14 @@ public class AdminResource {
         }
         return "selling company createdsuccessfully!\n" + " welcome " + sellingCompanyRep.getName() + " your password " + sellingCompanyRep.getPassword();
     }
+
     @GET
     @Path("/getAllSellingCompanyRep")
     public List<SellingCompanyRep> getAllSellingCompanyRep() {
         return entityManager.createQuery("SELECT s FROM SellingCompanyRep s", SellingCompanyRep.class).getResultList();
     }
 
-//    public void addCompanyToRegion(int companyId, int regionId) {
+    //    public void addCompanyToRegion(int companyId, int regionId) {
 //        ShippingCompany company = companyResource.getShippingCompanyId(companyId);
 //        CoveredRegion region = regionResource.getCoveredRegionId(regionId);
 //        if (company != null && region != null) {
@@ -162,8 +176,15 @@ public class AdminResource {
 //            regionResource.updateCoveredRegion(regionId,region);
 //        }
 //    }
-
-
-
+    public static String generateRandomPassword() {
+        StringBuilder password = new StringBuilder(PASSWORD_LENGTH);
+        int index = 0;
+        for (int i = 0; i < PASSWORD_LENGTH; i++) {
+            index = random.nextInt(PASSWORD_ALLOW_BASE.length());
+            password.append(PASSWORD_ALLOW_BASE.charAt(index));
+        }
+        return password.toString();
+    }
 
 }
+
