@@ -2,18 +2,18 @@ package shop;
 
 import jakarta.annotation.Resource;
 
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
-import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import jakarta.transaction.*;
 import jakarta.transaction.NotSupportedException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Path("/admin")
@@ -34,6 +34,7 @@ public class AdminResource {
     private static final int PASSWORD_LENGTH = 12;
 
     private static Random random = new Random();
+
 
     @Resource
     private UserTransaction userTransaction;
@@ -95,9 +96,9 @@ public class AdminResource {
 
     @PUT
     @Path("/updateAdmin/{username}")
-    public String updateAdmin(@PathParam("username") String username, Admin admin) {
+    public String updateAdmin(@PathParam("username") String username,Admin admin) {
 
-        Admin adminFromDB = entityManager.find(Admin.class, username);
+        Admin adminFromDB = entityManager.find(Admin.class , username);
         adminFromDB.setName(admin.getName());
         adminFromDB.setEmail(admin.getEmail());
         adminFromDB.setPassword(admin.getPassword());
@@ -141,6 +142,7 @@ public class AdminResource {
     }
 
 
+
     @POST
     @Path("/createSellingCompany")
     public String createSellingCompany(SellingCompanyRep sellingCompanyRep) {
@@ -168,14 +170,49 @@ public class AdminResource {
         return entityManager.createQuery("SELECT s FROM SellingCompanyRep s", SellingCompanyRep.class).getResultList();
     }
 
-    //    public void addCompanyToRegion(int companyId, int regionId) {
-//        ShippingCompany company = companyResource.getShippingCompanyId(companyId);
-//        CoveredRegion region = regionResource.getCoveredRegionId(regionId);
-//        if (company != null && region != null) {
-//            region.setCompany(company);
-//            regionResource.updateCoveredRegion(regionId,region);
-//        }
-//    }
+
+
+    @POST
+    @Path("/addCompaniesToRegions")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public void addCompaniesToRegions(List<Map<String, Integer>> data) {
+        try {
+            userTransaction.begin();
+
+            for (Map<String, Integer> item : data) {
+                int companyId = item.get("companyId");
+                int regionId = item.get("regionId");
+
+                ShippingCompany company = entityManager.find(ShippingCompany.class, companyId);
+                CoveredRegion region = entityManager.find(CoveredRegion.class, regionId);
+
+                if (company != null && region != null) {
+                    region.getShippingCompanies().add(company);
+                    company.getCoveredRegions().add(region);
+                    entityManager.persist(region);
+                    entityManager.persist(company);
+                }
+            }
+
+            userTransaction.commit();
+        } catch (NotSupportedException | SystemException | RollbackException |
+                 HeuristicMixedException | HeuristicRollbackException e) {
+            throw new WebApplicationException("Error adding companies to regions", e, 500);
+        } finally {
+            entityManager.close();
+        }
+    }
+
+    @GET
+    @Path("/getAllShippingCompany")
+    public List<ShippingCompany> getAllShippingCompany() {
+        TypedQuery<ShippingCompany> query = entityManager.createQuery("SELECT t FROM ShippingCompany t", ShippingCompany.class);
+        List<ShippingCompany> trips = query.getResultList();
+
+        return trips;
+        //return entityManager.createQuery("SELECT c FROM ShippingCompany c", ShippingCompany.class).getResultList();
+    }
+
     public static String generateRandomPassword() {
         StringBuilder password = new StringBuilder(PASSWORD_LENGTH);
         int index = 0;
@@ -185,6 +222,4 @@ public class AdminResource {
         }
         return password.toString();
     }
-
 }
-

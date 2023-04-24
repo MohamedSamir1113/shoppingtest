@@ -90,7 +90,7 @@ public class ShippingCompanyResource {
     @GET
     @Path("/getAllShippingCompany")
     public List<ShippingCompany> getAllShippingCompany() {
-        return entityManager.createQuery("SELECT c FROM ShippingCompany c", ShippingCompany.class).getResultList();
+        return entityManager.createQuery("SELECT sc.companyId, sc.name, cr.regionId, cr.region FROM ShippingCompany sc INNER JOIN region_company sccr ON sc.companyId = sccr.companyId INNER JOIN CoveredRegion cr ON sccr.regionId = cr.regionId").getResultList();
     }
 
     @PUT
