@@ -11,6 +11,8 @@
         <class>shop.SellingCompanyRep</class>
         <class>shop.ShippingCompany</class>
         <class>shop.CoveredRegion</class>
+        <class>shop.Product</class>
+
         
         <!-- other classes -->
         <properties>

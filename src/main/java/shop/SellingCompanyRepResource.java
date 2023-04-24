@@ -11,6 +11,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import javax.json.bind.annotation.JsonbProperty;
 import java.util.List;
+
 @Path("/sellingCompanyRep")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -41,6 +42,7 @@ public class SellingCompanyRepResource {
         }
         return "selling company createdsuccessfully!\n" + " welcome " + sellingCompanyRep.getName() + " your password " + sellingCompanyRep.getPassword();
     }
+
     @GET
     @Path("/getAllSellingCompanyRep")
     public List<SellingCompanyRep> getAllSellingCompanyRep() {
@@ -57,12 +59,54 @@ public class SellingCompanyRepResource {
             return "Selling Company Rep login failed!";
         }
     }
-//        Admin adminFromDB = entityManager.find(Admin.class, admin.getUsername());
+
+    @POST
+    @Path("/createProduct/{name}")
+    public String createProduct(@PathParam("name")String name,Product product) {
+        try {
+            userTransaction.begin();
+        } catch (NotSupportedException | SystemException e) {
+            throw new RuntimeException(e);
+        }
+        SellingCompanyRep sellingCompanyRep = entityManager.find(SellingCompanyRep.class, name);
+        if(sellingCompanyRep==null){
+            return "selling company not found";
+        }
+        product.setSellingCompanyRep(sellingCompanyRep);
+        entityManager.persist(product);
+        try {
+            userTransaction.commit();
+        } catch (RollbackException | HeuristicMixedException | HeuristicRollbackException | SecurityException |
+                 IllegalStateException | SystemException e) {
+            e.printStackTrace();
+        }
+        return "product is created  successfully!\n" + "product: " + product.getProductName();
+    }
+
+    @GET
+    @Path("/getAllProducts/{name}")
+    public List<Product> getAllProducts(@PathParam("name")String name) {
+        SellingCompanyRep sellingCompanyRep = entityManager.find(SellingCompanyRep.class, name);
+        if(sellingCompanyRep==null){
+            return null;
+        }
+        List<Product> products = sellingCompanyRep.getProducts();
+        return products;
+        //return entityManager.createQuery("SELECT a FROM Product a where a.sellingCompanyRep = :name", Product.class).getResultList();
+    }
+
+
+    //        Admin adminFromDB = entityManager.find(Admin.class, admin.getUsername());
 //        if (adminFromDB.getPassword().equals(admin.getPassword())) {
 //            return "Admin logged in successfully!";
 //        } else {
 //            return "Admin login failed!";
 //        }
 //    }
+    @GET
+    @Path("/getAvailableProducts")
+    public List<Product> getAvailableProducts() {
+        return entityManager.createQuery("SELECT p FROM Product p WHERE p.available = true", Product.class).getResultList();
+    }
 
 }
