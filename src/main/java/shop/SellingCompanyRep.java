@@ -18,6 +18,15 @@ public class SellingCompanyRep {
     @JsonIgnore
     private List<Product> products ;
 
+    public SellingCompanyRep() {
+
+    }
+
+    public SellingCompanyRep(String name, String password) {
+        this.name = name;
+        this.password = password;
+    }
+
     public String getName() {
         return name;
     }

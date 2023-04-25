@@ -2,11 +2,12 @@ package shop;
 
 import jakarta.annotation.Resource;
 
+import jakarta.ejb.EJB;
+import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
-import jakarta.persistence.TypedQuery;
 import jakarta.transaction.*;
 import jakarta.transaction.NotSupportedException;
 import jakarta.ws.rs.*;
@@ -25,17 +26,6 @@ public class AdminResource {
 
     private final EntityManager entityManager = emf.createEntityManager();
 
-    private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
-    private static final String CHAR_UPPER = CHAR_LOWER.toUpperCase();
-    private static final String NUMBER = "0123456789";
-    private static final String OTHER_CHAR = "!@#$%&*()_+-=[]?";
-
-    private static final String PASSWORD_ALLOW_BASE = CHAR_LOWER + CHAR_UPPER + NUMBER + OTHER_CHAR;
-    private static final int PASSWORD_LENGTH = 12;
-
-    private static Random random = new Random();
-
-
     @Resource
     private UserTransaction userTransaction;
 
@@ -44,6 +34,10 @@ public class AdminResource {
 
 
     private CoveredRegionResource regionResource;
+
+    @EJB
+    private SellingCompanyCreationBean sellingCompanyCreationBean;
+
 
     @GET
     @Path("/welcome")
@@ -82,9 +76,15 @@ public class AdminResource {
 
     // method to get all customers
     @GET
+    @Path("/getAllCustomers")
+    public List<Customer> getAllCustomers() {
+        return entityManager.createQuery("SELECT c FROM Customer c", Customer.class).getResultList();
+    }
+
+    @GET
     @Path("/getAllAdmins")
     public List<Admin> getAllAdmins() {
-        return entityManager.createQuery("SELECT a FROM Admin a", Admin.class).getResultList();
+        return entityManager.createQuery("SELECT c FROM Admin c", Admin.class).getResultList();
     }
 
     @GET
@@ -142,27 +142,15 @@ public class AdminResource {
     }
 
 
-
     @POST
     @Path("/createSellingCompany")
-    public String createSellingCompany(SellingCompanyRep sellingCompanyRep) {
-        try {
-            userTransaction.begin();
-        } catch (NotSupportedException | SystemException e) {
-            throw new RuntimeException(e);
-        }
-        String password = generateRandomPassword();
-        sellingCompanyRep.setPassword(password);
-        entityManager.persist(sellingCompanyRep);
-        try {
-            userTransaction.commit();
-        } catch (RollbackException | HeuristicMixedException | HeuristicRollbackException | SecurityException |
-                 IllegalStateException |
-                 SystemException e) {
-            e.printStackTrace();
-        }
-        return "selling company createdsuccessfully!\n" + " welcome " + sellingCompanyRep.getName() + " your password " + sellingCompanyRep.getPassword();
+    public String createSellingCompany(SellingCompanyRep s) {
+        sellingCompanyCreationBean.createSellingCompany(s);
+        String password = sellingCompanyCreationBean.generatePassword();
+        return "Selling company created successfully!\n" + "Welcome " + s.getName() + ", your password is " + s.getPassword();
     }
+
+
 
     @GET
     @Path("/getAllSellingCompanyRep")
@@ -170,7 +158,42 @@ public class AdminResource {
         return entityManager.createQuery("SELECT s FROM SellingCompanyRep s", SellingCompanyRep.class).getResultList();
     }
 
-
+    @POST
+    @Path("/createShippingCompany")
+    public String createShippingCompany(ShippingCompany company) {
+        try {
+            userTransaction.begin();
+        } catch (NotSupportedException | SystemException e) {
+            throw new RuntimeException(e);
+        }
+        entityManager.persist(company);
+        try {
+            userTransaction.commit();
+        } catch (RollbackException | HeuristicMixedException | HeuristicRollbackException | SecurityException |
+                 IllegalStateException |
+                 SystemException e) {
+            e.printStackTrace();
+        }
+        return "shipping company created successfully!\n" + " welcome " + company.getName() + "your company id is" + company.getId();
+    }
+    @POST
+    @Path("/createCoveredRegion")
+    public String createCoveredRegion(CoveredRegion region) {
+        try {
+            userTransaction.begin();
+        } catch (NotSupportedException | SystemException e) {
+            throw new RuntimeException(e);
+        }
+        entityManager.persist(region);
+        try {
+            userTransaction.commit();
+        } catch (RollbackException | HeuristicMixedException | HeuristicRollbackException | SecurityException |
+                 IllegalStateException |
+                 SystemException e) {
+            e.printStackTrace();
+        }
+        return "shipping company created successfully!\n" + " welcome " + region.getRegion() + "your company id is" ;
+    }
 
     @POST
     @Path("/addCompaniesToRegions")
@@ -206,20 +229,6 @@ public class AdminResource {
     @GET
     @Path("/getAllShippingCompany")
     public List<ShippingCompany> getAllShippingCompany() {
-        TypedQuery<ShippingCompany> query = entityManager.createQuery("SELECT t FROM ShippingCompany t", ShippingCompany.class);
-        List<ShippingCompany> trips = query.getResultList();
-
-        return trips;
-        //return entityManager.createQuery("SELECT c FROM ShippingCompany c", ShippingCompany.class).getResultList();
-    }
-
-    public static String generateRandomPassword() {
-        StringBuilder password = new StringBuilder(PASSWORD_LENGTH);
-        int index = 0;
-        for (int i = 0; i < PASSWORD_LENGTH; i++) {
-            index = random.nextInt(PASSWORD_ALLOW_BASE.length());
-            password.append(PASSWORD_ALLOW_BASE.charAt(index));
-        }
-        return password.toString();
+        return entityManager.createQuery("SELECT c FROM ShippingCompany c", ShippingCompany.class).getResultList();
     }
 }

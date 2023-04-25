@@ -12,6 +12,7 @@
         <class>shop.ShippingCompany</class>
         <class>shop.CoveredRegion</class>
         <class>shop.Product</class>
+        <class>shop.SellingCompanyCreationBean</class>
 
         
         <!-- other classes -->
